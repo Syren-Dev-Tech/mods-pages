@@ -1,0 +1,8 @@
+{
+    "repositories": [
+        {
+            "repo": "scylla",
+            "prettyName": "Scylla"
+        }
+    ]
+}

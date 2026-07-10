@@ -1,0 +1,12 @@
+<svg width="640" height="640" viewBox="0 0 640 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="defaultThumbBg" x1="0" y1="0" x2="640" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#32373F"/>
+      <stop offset="1" stop-color="#1A1E24"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="640" fill="url(#defaultThumbBg)"/>
+  <rect x="104" y="104" width="432" height="432" rx="36" fill="#E3A94B" fill-opacity="0.2"/>
+  <path d="M224 409L320 230L416 409H378L357 367H284L262 409H224Z" fill="#F6BF63"/>
+  <circle cx="320" cy="153" r="28" fill="#F6BF63" fill-opacity="0.75"/>
+</svg>
