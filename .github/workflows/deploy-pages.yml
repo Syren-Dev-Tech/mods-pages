@@ -36,9 +36,13 @@ jobs:
         run: |
           corepack enable
           yarn install --immutable
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Build site
         run: yarn build
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Checkout hosting branch snapshot
         uses: actions/checkout@v4
