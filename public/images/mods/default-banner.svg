@@ -1,0 +1,19 @@
+<svg width="1600" height="500" viewBox="0 0 1600 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="defaultBannerBg" x1="0" y1="0" x2="1600" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#14171C"/>
+      <stop offset="1" stop-color="#2A3037"/>
+    </linearGradient>
+    <radialGradient id="defaultBannerGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1180 120) rotate(108.281) scale(240 590)">
+      <stop stop-color="#F6BF63" stop-opacity="0.68"/>
+      <stop offset="1" stop-color="#F6BF63" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="500" fill="url(#defaultBannerBg)"/>
+  <rect width="1600" height="500" fill="url(#defaultBannerGlow)"/>
+  <rect x="210" y="120" width="290" height="260" rx="24" fill="#F6BF63" fill-opacity="0.22"/>
+  <path d="M302 328L356 224L410 328H386L375 304H336L326 328H302Z" fill="#F6BF63"/>
+  <path d="M560 212H1120" stroke="#F6BF63" stroke-opacity="0.42" stroke-width="8"/>
+  <path d="M560 262H980" stroke="#F6BF63" stroke-opacity="0.24" stroke-width="8"/>
+  <path d="M560 312H1060" stroke="#F6BF63" stroke-opacity="0.34" stroke-width="8"/>
+</svg>

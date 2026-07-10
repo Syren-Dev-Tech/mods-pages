@@ -1,0 +1,125 @@
+name: Release Mod And Update Mods Pages
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+env:
+  JAVA_VERSION: "21"
+  BUILD_COMMAND: "./gradlew build"
+  ARTIFACT_GLOB: "build/libs/*.jar"
+
+  # Update these for each mod repository.
+  MOD_SLUG: "replace-with-mod-slug"
+  PAGES_REPOSITORY: "your-org/mods-pages"
+  PAGES_BRANCH: "gh-pages"
+
+jobs:
+  release-and-update-pages:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout mod repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Build JAR artifacts
+        shell: bash
+        run: $BUILD_COMMAND
+
+      - name: Resolve release artifacts
+        id: artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          mapfile -t files < <(compgen -G "$ARTIFACT_GLOB" || true)
+
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "No artifacts found for glob: $ARTIFACT_GLOB" >&2
+            exit 1
+          fi
+
+          printf 'files<<EOF\n' >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${files[@]}" >> "$GITHUB_OUTPUT"
+          printf 'EOF\n' >> "$GITHUB_OUTPUT"
+
+      - name: Create or update GitHub release for tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+
+          if gh release view "$tag" > /dev/null 2>&1; then
+            gh release upload "$tag" ${{ steps.artifacts.outputs.files }} --clobber
+          else
+            gh release create "$tag" ${{ steps.artifacts.outputs.files }} --generate-notes --title "$tag"
+          fi
+
+      - name: Build latest-release.json payload
+        id: release_json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          release_json="$(gh api repos/${GITHUB_REPOSITORY}/releases/tags/${tag})"
+
+          printf '%s' "$release_json" | jq '{
+            name: (.name // .tag_name),
+            tag: .tag_name,
+            publishedAt: .published_at,
+            releaseUrl: .html_url,
+            assets: [
+              .assets[] | {
+                name: .name,
+                downloadUrl: .browser_download_url,
+                size: .size
+              }
+            ]
+          }' > latest-release.json
+
+      - name: Checkout mods-pages hosting branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.PAGES_REPOSITORY }}
+          ref: ${{ env.PAGES_BRANCH }}
+          token: ${{ secrets.MODS_PAGES_TOKEN }}
+          path: mods-pages-branch
+
+      - name: Update JSON in hosting branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          target_dir="mods-pages-branch/data/mods/${MOD_SLUG}"
+          mkdir -p "$target_dir"
+          cp latest-release.json "$target_dir/latest-release.json"
+
+      - name: Commit and push JSON update
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd mods-pages-branch
+
+          if git diff --quiet -- data/mods/${MOD_SLUG}/latest-release.json; then
+            echo "No latest-release.json changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/mods/${MOD_SLUG}/latest-release.json
+          git commit -m "chore(${MOD_SLUG}): update latest release ${GITHUB_REF_NAME}"
+          git push origin "${PAGES_BRANCH}"
