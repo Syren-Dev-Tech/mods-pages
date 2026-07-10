@@ -38,9 +38,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
-      - name: Checkout hosting branch snapshot
-        uses: actions/checkout@v4
+      - name: Publish dist to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          ref: gh-pages
-          path: gh-pages-snapshot
-        continue-on-error: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+          force_orphan: true
