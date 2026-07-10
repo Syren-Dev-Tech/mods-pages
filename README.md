@@ -33,34 +33,29 @@ npm run build
 ## Project Structure
 
 - `src/config/site.ts`: organization config, site text, and global default visuals/theme.
-- `src/data/mods.ts`: central mod list and routing metadata.
+- `public/config/mod-repositories.json`: single source-of-truth mod repository list.
+- `src/data/mods.ts`: loader that reads and normalizes public mod config.
 - `src/pages/HomePage.tsx`: tiles for every mod.
 - `src/pages/ModDownloadsPage.tsx`: banner + latest release + old builds link.
-- `src/services/releases.ts`: release fetching logic.
-- `public/data/mods/<slug>/latest-release.json`: CI-updated latest release payload.
+- `src/services/releases.ts`: latest release fetching directly from GitHub API.
 - `public/images/mods/*`: thumbnails and banners.
 
 ## Add A New Mod
 
-1. Add a new object to `src/data/mods.ts`:
+1. Add a new repository entry to `public/config/mod-repositories.json`:
 
-```js
+```json
 {
-	slug: 'example-mod',
-	name: 'Example Mod',
-	description: 'Short description shown on the home tile.',
-	repository: { repo: 'example-mod' },
-	pagesAssets: {
-		branch: 'pages-assets',
-		themeJsonPath: 'theme.json'
-	},
-	oldBuildsUrl: getGitHubReleasesUrl('example-mod'),
-	latestReleaseJson: '/data/mods/example-mod/latest-release.json',
+	"repositories": [
+		{
+			"repo": "example-mod",
+			"prettyName": "Example Mod"
+		}
+	]
 }
 ```
 
-2. Add a CI-generated JSON file at `public/data/mods/example-mod/latest-release.json`.
-3. In the mod repository's `pages-assets` branch, add a `theme.json` and image files.
+2. In the mod repository's `pages-assets` branch, add a `theme.json` and image files.
 
 If no image/theme is supplied by that repo, the shared defaults in `src/config/site.ts` are used.
 
@@ -78,23 +73,50 @@ Mod repository:
 Mods pages repository (this repo):
 
 - `main`: app source.
-- `gh-pages`: built site output and `data/mods/<slug>/latest-release.json` files.
+- `gh-pages`: built site output only.
 
 ### Required Files In Each Mod Repository
 
-- `.github/workflows/release.yml` (copied from `.github/workflow-templates/mod-release-template.yml` in this repo).
+- `.github/workflows/release.yml` (copied from `.github/workflow-templates/mod-release-template.yml` in this repo, optional but recommended).
 - `pages-assets/theme.json`.
 - Image files referenced by `pages-assets/theme.json` (recommended under `pages-assets/images/`).
 
 ### Required Files In This Repository
 
-- `src/data/mods.ts`: one entry per mod.
+- `public/config/mod-repositories.json`: one entry per mod repo (`repo` + `prettyName`).
+- `src/data/mods.ts`: reads and normalizes the public config file.
 - `.github/workflows/deploy-pages.yml`: builds and publishes site to `gh-pages`.
-- `public/data/mods/<slug>/latest-release.json` can be authored manually initially, then kept up to date by mod workflows.
+
+### Single Config File
+
+All mod repositories referenced by the site are defined manually in one file:
+
+- `public/config/mod-repositories.json`
+
+To add or remove mods, edit this file and deploy.
+
+Config schema:
+
+```json
+{
+	"repositories": [
+		{
+			"repo": "string",
+			"prettyName": "string"
+		}
+	]
+}
+```
+
+Schema notes:
+
+- `repo` should be the GitHub repository name under your shared organization.
+- `prettyName` is the display name shown in the UI.
+- Organization owner is not set per entry; the site uses `ORGANIZATION_NAME` from `src/config/site.ts`.
 
 ## Mod Definition Schema (`src/data/mods.ts`)
 
-Each entry in `mods` should follow this shape:
+Each repository entry from the public config is normalized to this internal shape:
 
 ```ts
 {
@@ -112,7 +134,6 @@ Each entry in `mods` should follow this shape:
 		bannerPath?: string     // optional override if not provided by theme JSON
 	},
 	oldBuildsUrl?: string | null,
-	latestReleaseJson?: string,
 	thumbnailImage?: string, // optional hard fallback
 	bannerImage?: string     // optional hard fallback
 }
@@ -120,7 +141,7 @@ Each entry in `mods` should follow this shape:
 
 Notes:
 
-- `slug` must match the JSON output path: `data/mods/<slug>/latest-release.json`.
+- `slug` is used in route paths (`/mods/<slug>`).
 - If `repository.owner` is omitted, `ORGANIZATION_NAME` from `src/config/site.ts` is used.
 
 ## Pages Assets Theme Schema (`pages-assets/theme.json`)
@@ -161,34 +182,23 @@ Recommended asset file conventions in `pages-assets`:
 - `images/<slug>-thumb.png` (square image, recommended 512x512 or 1024x1024).
 - `images/<slug>-banner.png` (wide banner, recommended around 1600x500).
 
-## Latest Release JSON Schema (`data/mods/<slug>/latest-release.json`)
+## Latest Release Data Source
 
-This JSON is read by the site for each mod's latest download data.
+The site fetches latest release data directly from GitHub API for each configured repository:
 
-Expected shape:
+- Endpoint: `GET /repos/<owner>/<repo>/releases/latest`
+- API docs: https://docs.github.com/rest/releases/releases#get-the-latest-release
 
-```json
-{
-	"name": "Example Mod 1.2.3",
-	"tag": "v1.2.3",
-	"publishedAt": "2026-07-10T12:00:00Z",
-	"releaseUrl": "https://github.com/your-org/example-mod/releases/tag/v1.2.3",
-	"assets": [
-		{
-			"name": "example-mod-1.2.3.jar",
-			"downloadUrl": "https://github.com/your-org/example-mod/releases/download/v1.2.3/example-mod-1.2.3.jar",
-			"size": 1234567
-		}
-	]
-}
-```
+Data used by this site:
 
-Latest-release schema notes:
+- `name` / `tag_name`
+- `published_at`
+- `html_url`
+- `assets[].name`
+- `assets[].browser_download_url`
+- `assets[].size`
 
-- `publishedAt` should be ISO-8601.
-- `assets` can be empty, but should be present.
-- `size` is in bytes.
-- If this file is missing, the app falls back to GitHub's `releases/latest` API.
+If the latest release endpoint returns an error (no releases, private repo without access, rate limit, etc.), the mod page shows an error and links to GitHub releases.
 
 ## Configure Organization Name Once
 
@@ -208,7 +218,6 @@ Workflow file: `.github/workflows/deploy-pages.yml`
 
 - Trigger: push to `main` (and manual dispatch).
 - Behavior: builds the site and publishes `dist` to `gh-pages`.
-- Important: before publish, it copies existing `data/mods/*/latest-release.json` files from the current `gh-pages` branch into the new build output so release JSON updates made by mod repositories are preserved.
 
 Required repository settings (this repo):
 
@@ -216,27 +225,14 @@ Required repository settings (this repo):
 - Actions must be enabled.
 - `GITHUB_TOKEN` must have permission to push to `gh-pages` (workflow sets `contents: write`).
 
-### Mod repositories (tag release + JSON update)
+### Mod repositories (tag release)
 
 Template file: `.github/workflow-templates/mod-release-template.yml`
 
 Copy this into each mod repository as `.github/workflows/release.yml` and set:
 
-- `MOD_SLUG`: slug used in this site under `data/mods/<slug>`.
-- `PAGES_REPOSITORY`: owner/repo of this site repository (example: `your-org/mods-pages`).
-- `PAGES_BRANCH`: hosting branch (default `gh-pages`).
 - `BUILD_COMMAND`: build command that creates jar files.
 - `ARTIFACT_GLOB`: glob for built jar artifacts.
-
-Required secret in each mod repository:
-
-- `MODS_PAGES_TOKEN`: token with `contents:write` access to the site repository so the workflow can commit `data/mods/<slug>/latest-release.json` in `gh-pages`.
-
-Token recommendations for `MODS_PAGES_TOKEN`:
-
-- Prefer a fine-grained PAT scoped only to the mods-pages repository.
-- Required repository permission: `Contents: Read and write`.
-- Store the token as an Actions secret in each mod repository.
 
 Required repository settings (mod repos):
 
@@ -249,16 +245,14 @@ What the template workflow does:
 1. Runs on tag creation (`push` to tags).
 2. Builds jar artifacts.
 3. Creates or updates a GitHub release for the tag and uploads artifacts.
-4. Generates `latest-release.json` from the release data.
-5. Commits that JSON into this repository's `gh-pages` branch at `data/mods/<slug>/latest-release.json`.
 
 ## End-To-End Flow Summary
 
 1. Mod maintainer pushes tag in mod repository.
-2. Mod workflow builds jar(s), creates/updates release, and updates `data/mods/<slug>/latest-release.json` in this repo's `gh-pages` branch.
-3. This site's deploy workflow runs on changes to `main` and republishes to `gh-pages` while preserving existing release JSON files in `data/mods/*`.
-4. Site renders latest releases from those JSON files.
+2. Mod workflow builds jar(s), creates/updates release, and uploads release assets.
+3. This site reads latest release metadata directly from GitHub API using the repositories listed in `src/data/mods.ts`.
+4. This site's deploy workflow publishes frontend changes from `main` to `gh-pages`.
 
 ## CI/CD Release Update Contract
 
-The canonical contract is documented above in `Latest Release JSON Schema`.
+The canonical contract is GitHub Releases API (`releases/latest`) for each configured repository.

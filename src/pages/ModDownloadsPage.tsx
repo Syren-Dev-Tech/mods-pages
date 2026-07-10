@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getGitHubLatestReleaseUrl, getRepositoryOwner } from '../config/site'
 import { getModBySlug } from '../data/mods'
 import { getModVisuals } from '../services/modAssets'
 import { fetchLatestRelease } from '../services/releases'
-import type { LatestRelease, ModVisuals } from '../types/mods'
+import type { LatestRelease, ModDefinition, ModVisuals } from '../types/mods'
 
 interface ReleaseState {
     slug: string | null
@@ -44,7 +44,8 @@ function formatSize(bytes?: number): string | null {
 
 export default function ModDownloadsPage() {
     const { slug } = useParams()
-    const mod = useMemo(() => getModBySlug(slug), [slug])
+    const [mod, setMod] = useState<ModDefinition | null>(null)
+    const [isModLoading, setIsModLoading] = useState(true)
     const [releaseState, setReleaseState] = useState<ReleaseState>({
         slug: null,
         release: null,
@@ -55,6 +56,32 @@ export default function ModDownloadsPage() {
         visuals: null,
     })
     const visuals = visualsState.slug === mod?.slug ? visualsState.visuals : null
+
+    useEffect(() => {
+        let cancelled = false
+
+        async function loadMod() {
+            setIsModLoading(true)
+
+            try {
+                const loadedMod = await getModBySlug(slug)
+
+                if (!cancelled) {
+                    setMod(loadedMod ?? null)
+                }
+            } finally {
+                if (!cancelled) {
+                    setIsModLoading(false)
+                }
+            }
+        }
+
+        loadMod()
+
+        return () => {
+            cancelled = true
+        }
+    }, [slug])
 
     useEffect(() => {
         if (!mod) {
@@ -153,8 +180,24 @@ export default function ModDownloadsPage() {
     const errorMessage = isCurrentSlugLoaded ? releaseState.errorMessage : ''
 
     useEffect(() => {
+        if (isModLoading) {
+            document.title = 'Loading Mod...'
+            return
+        }
+
         document.title = mod ? `${mod.name} Downloads` : 'Mod Not Found'
-    }, [mod])
+    }, [isModLoading, mod])
+
+    if (isModLoading) {
+        return (
+            <section className="container">
+                <div className="d-flex align-items-center gap-2 text-body-secondary">
+                    <div className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+                    Loading mod configuration...
+                </div>
+            </section>
+        )
+    }
 
     if (!mod) {
         return (

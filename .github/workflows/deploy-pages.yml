@@ -18,47 +18,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+
       - name: Enable corepack
         run: corepack enable
+
       - name: Node setup
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'yarn'
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      - name: 'Do the build'
-        run: yarn && yarn build
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Install dependencies
+        run: yarn install --immutable
 
       - name: Build site
         run: yarn build
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
-      - name: Checkout hosting branch snapshot
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          path: gh-pages-snapshot
-        continue-on-error: true
-
-      - name: Preserve latest release JSON from hosting branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ ! -d gh-pages-snapshot/data/mods ]]; then
-            echo "No existing release JSON snapshot found on gh-pages branch."
-            exit 0
-          fi
-
-          while IFS= read -r file; do
-            rel_path="${file#gh-pages-snapshot/}"
-            mkdir -p "dist/$(dirname "$rel_path")"
-            cp "$file" "dist/$rel_path"
-          done < <(find gh-pages-snapshot/data/mods -name latest-release.json -type f)
 
       - name: Publish dist to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4

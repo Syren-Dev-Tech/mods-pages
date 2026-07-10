@@ -74,19 +74,6 @@ export async function fetchLatestRelease(mod: ModDefinition): Promise<LatestRele
         throw new Error('A mod configuration is required to fetch releases.')
     }
 
-    if (mod.latestReleaseJson) {
-        const response = await fetch(mod.latestReleaseJson, { cache: 'no-store' })
-
-        if (response.ok) {
-            const payload = (await response.json()) as ReleasePayload
-            const normalized = normalizeReleasePayload(payload)
-
-            if (normalized) {
-                return normalized
-            }
-        }
-    }
-
     const owner = getRepositoryOwner(mod)
     const { repo } = mod.repository
     return fetchFromGitHubApi(owner, repo)

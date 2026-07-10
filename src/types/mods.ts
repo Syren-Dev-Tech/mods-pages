@@ -3,6 +3,15 @@ export interface ModRepository {
     repo: string
 }
 
+export interface PublicModRepositoryConfig {
+    repo: string
+    prettyName: string
+}
+
+export interface PublicModConfig {
+    repositories: PublicModRepositoryConfig[]
+}
+
 export interface PagesAssetsConfig {
     branch?: string
     themeJsonPath?: string
@@ -17,7 +26,6 @@ export interface ModDefinition {
     repository: ModRepository
     pagesAssets?: PagesAssetsConfig
     oldBuildsUrl?: string | null
-    latestReleaseJson?: string
     thumbnailImage?: string
     bannerImage?: string
 }

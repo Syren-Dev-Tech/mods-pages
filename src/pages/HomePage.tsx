@@ -1,28 +1,46 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ORGANIZATION_NAME } from '../config/site'
-import { mods } from '../data/mods'
+import { getMods } from '../data/mods'
 import { getModVisuals } from '../services/modAssets'
-import type { ModVisuals } from '../types/mods'
+import type { ModDefinition, ModVisuals } from '../types/mods'
 
 type VisualMap = Record<string, ModVisuals | null>
 
 export default function HomePage() {
+    const [mods, setMods] = useState<ModDefinition[]>([])
+    const [configError, setConfigError] = useState('')
     const [visualsBySlug, setVisualsBySlug] = useState<VisualMap>({})
 
     useEffect(() => {
         let cancelled = false
 
         async function loadVisuals() {
-            const entries = await Promise.all(
-                mods.map(async (mod) => {
-                    const visuals = await getModVisuals(mod)
-                    return [mod.slug, visuals] as const
-                }),
-            )
+            try {
+                const loadedMods = await getMods()
 
-            if (!cancelled) {
-                setVisualsBySlug(Object.fromEntries(entries))
+                const entries = await Promise.all(
+                    loadedMods.map(async (mod) => {
+                        const visuals = await getModVisuals(mod)
+                        return [mod.slug, visuals] as const
+                    }),
+                )
+
+                if (!cancelled) {
+                    setMods(loadedMods)
+                    setVisualsBySlug(Object.fromEntries(entries))
+                    setConfigError('')
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setMods([])
+                    setVisualsBySlug({})
+                    setConfigError(
+                        error instanceof Error
+                            ? error.message
+                            : 'Failed to load mod repository config.',
+                    )
+                }
             }
         }
 
@@ -41,6 +59,12 @@ export default function HomePage() {
                     Browse official builds for {ORGANIZATION_NAME} mods and jump directly to release assets.
                 </p>
             </div>
+
+            {configError && (
+                <div className="alert alert-warning mb-4" role="alert">
+                    {configError}
+                </div>
+            )}
 
             <div className="row g-4">
                 {mods.map((mod) => (
@@ -65,7 +89,7 @@ export default function HomePage() {
                 {mods.length === 0 && (
                     <div className="col-12">
                         <div className="alert alert-info mb-0">
-                            No mods are configured yet. Add your first entry in <code>src/data/mods.ts</code>.
+                            No mods are configured yet. Add your first entry in <code>public/config/mod-repositories.json</code>.
                         </div>
                     </div>
                 )}
