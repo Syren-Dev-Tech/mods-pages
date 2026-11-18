@@ -3,6 +3,10 @@
         {
             "repo": "scylla",
             "prettyName": "Scylla"
+        },
+        {
+            "repo": "vwam_mc",
+            "prettyName": "Villagers, Workshops, and Markets"
         }
     ]
 }
