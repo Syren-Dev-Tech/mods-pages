@@ -1,0 +1,161 @@
+// Import the functions from main stylesheet
+// Note: SCSS functions need to be in the same file or imported
+@function luminance($color) {
+  $red: red($color) / 255;
+  $green: green($color) / 255;
+  $blue: blue($color) / 255;
+
+  // Apply gamma correction
+  $red: if($red <= 0.03928, $red / 12.92, pow(($red + 0.055) / 1.055, 2.4));
+  $green: if($green <= 0.03928, $green / 12.92, pow(($green + 0.055) / 1.055, 2.4));
+  $blue: if($blue <= 0.03928, $blue / 12.92, pow(($blue + 0.055) / 1.055, 2.4));
+
+  // Calculate relative luminance
+  @return 0.2126 * $red + 0.7152 * $green + 0.0722 * $blue;
+}
+
+@function get-text-color($background) {
+  $lum: luminance($background);
+  // If luminance > 0.5, use dark text, otherwise use light text
+  @if $lum > 0.5 {
+    @return #1a2240;
+  } @else {
+    @return #ffffff;
+  }
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 280px;
+  height: 100vh;
+  background: var(--bs-body-bg);
+  border-right: 1px solid var(--bs-border-color);
+  padding: 1rem;
+  overflow-y: auto;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 999;
+  transition: opacity 0.3s ease;
+
+  &.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--bs-border-color);
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .btn-close {
+    display: none;
+  }
+}
+
+.sidebar .nav-link {
+  color: var(--bs-body-color);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &:hover:not(.disabled) {
+    background-color: color-mix(in srgb, var(--bs-secondary-bg), transparent 50%);
+    transform: translateX(4px);
+  }
+
+  &.active {
+    background-color: var(--mods-accent);
+    color: #{get-text-color(#00ff69)};
+  }
+
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.sidebar-footer {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+}
+
+/* Mobile styles */
+@media (max-width: 991.98px) {
+  .sidebar {
+    transform: translateX(-100%);
+
+    &.show {
+      transform: translateX(0);
+    }
+  }
+
+  .sidebar-header .btn-close {
+    display: block;
+  }
+
+  /* Main content adjustments */
+  .layout-with-sidebar {
+    padding-left: 0;
+
+    &.sidebar-open {
+      overflow: hidden;
+    }
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 992px) {
+  .layout-with-sidebar {
+    padding-left: 280px;
+  }
+
+  .sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay,
+  .sidebar-header .btn-close,
+  .sidebar-toggle {
+    display: none;
+  }
+}
+
+/* Scrollbar styling */
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--bs-border-color), transparent 50%);
+  border-radius: 4px;
+
+  &:hover {
+    background: var(--bs-border-color);
+  }
+}

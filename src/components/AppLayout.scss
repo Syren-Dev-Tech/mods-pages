@@ -1,0 +1,61 @@
+.layout-with-sidebar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.layout-main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+header {
+  position: relative;
+  z-index: 100;
+}
+
+.sidebar-toggle {
+  color: var(--bs-body-color);
+  border: none;
+  padding: 0.5rem;
+  margin-right: 0.5rem;
+  font-size: 1.25rem;
+  display: none;
+
+  &:hover {
+    color: var(--mods-accent);
+  }
+}
+
+.navbar-brand {
+  color: var(--bs-body-color);
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--mods-accent);
+  }
+}
+
+.mods-navbar {
+  backdrop-filter: blur(8px);
+  background-color: color-mix(in srgb, var(--bs-body-bg), transparent 25%);
+}
+
+.mods-main {
+  flex: 1;
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+}
+
+@media (max-width: 991.98px) {
+  .sidebar-toggle {
+    display: block;
+  }
+
+  .mods-main {
+    padding-top: 1.25rem;
+  }
+}

@@ -1,0 +1,22 @@
+{
+    "repositories": [
+        {
+            "repo": "scylla-core",
+            "prettyName": "Scylla Core",
+            "versions": [
+                {
+                    "version": "1.21.1",
+                    "branch": "mc21-1"
+                }
+            ]
+        },
+        {
+            "repo": "hydra",
+            "prettyName": "Hydra"
+        },
+        {
+            "repo": "slml",
+            "prettyName": "SLML - Screen Layout Markup Language"
+        }
+    ]
+}
