@@ -11,16 +11,15 @@ interface DefaultModVisuals {
 }
 
 export const DEFAULT_MOD_VISUALS: DefaultModVisuals = {
-    thumbnailImage: '/images/mods/default-thumb.svg',
-    bannerImage: '/images/mods/default-banner.svg',
+    thumbnailImage: '/favicon.svg',
+    bannerImage: '/favicon.svg',
     theme: {
-        accent: '#ca7b15',
-        gradientStart: 'rgba(202, 123, 21, 0.22)',
-        gradientEnd: 'rgba(30, 136, 229, 0.2)',
-        panelLight: 'rgba(255, 247, 224, 0.8)',
-        panelDark: 'rgba(33, 37, 41, 0.8)',
+        gradientStart: 'rgba(0, 255, 105, 0.15)',
+        gradientEnd: 'rgba(0, 105, 255, 0.15)',
+        panelLight: 'rgba(230, 245, 255, 0.8)',
+        panelDark: 'rgba(20, 30, 50, 0.8)',
         bannerGlow:
-            'radial-gradient(circle at 20% 20%, rgba(255, 206, 86, 0.45), transparent 40%), radial-gradient(circle at 80% 80%, rgba(30, 136, 229, 0.3), transparent 45%)',
+            'radial-gradient(circle at 20% 20%, rgba(0, 255, 105, 0.3), transparent 40%), radial-gradient(circle at 80% 80%, rgba(0, 105, 255, 0.25), transparent 45%)',
     },
 }
 

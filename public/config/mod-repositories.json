@@ -2,7 +2,13 @@
     "repositories": [
         {
             "repo": "scylla",
-            "prettyName": "Scylla"
+            "prettyName": "Scylla",
+            "versions": [
+                {
+                    "version": "1.21.1",
+                    "branch": "mc21-1"
+                }
+            ]
         },
         {
             "repo": "vwam_mc",

@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import { ORGANIZATION_DISPLAY_NAME } from '../config/site'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 export default function OrganizationHome() {
+    usePageTitle(ORGANIZATION_DISPLAY_NAME)
     return (
         <section className="container">
             {/* Hero Section */}

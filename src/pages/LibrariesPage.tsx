@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { getLibraries } from '../data/libraries'
 import type { LibraryDefinition } from '../types/libraries'
 
 export default function LibrariesPage() {
+    usePageTitle('Libraries')
     const [libraries, setLibraries] = useState<LibraryDefinition[]>([])
     const [configError, setConfigError] = useState('')
 
@@ -56,6 +58,13 @@ export default function LibrariesPage() {
                 {libraries.map((library) => (
                     <div className="col-12 col-sm-6 col-lg-4" key={library.slug}>
                         <article className="card h-100 mods-tile">
+                            <div className="mods-thumb-wrapper">
+                                <img
+                                    src="/favicon.svg"
+                                    alt={`${library.name} thumbnail`}
+                                    className="mods-thumb"
+                                />
+                            </div>
                             <div className="card-body d-flex flex-column">
                                 <h2 className="h4 card-title">{library.name}</h2>
                                 <p className="card-text text-body-secondary flex-grow-1">

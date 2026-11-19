@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,10 +13,10 @@
 
         const path = window.location.pathname;
         const params = new URLSearchParams();
-        
+
         // Store the path that was requested (remove any .html extension and leading slash)
-        const pathToStore = path.replace(/\/$/,'').replace(/\/[^\/]*\.html$/,'') || '/';
-        
+        const pathToStore = path.replace(/\/$/, '').replace(/\/[^/]*\.html$/, '') || '/';
+
         // Only redirect if the path doesn't end with a file extension
         // This allows other static files to work normally
         if (!path.match(/\.[a-z0-9]+$/i)) {
@@ -24,6 +25,8 @@
         }
     </script>
 </head>
+
 <body>
 </body>
+
 </html>

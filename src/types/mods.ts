@@ -3,9 +3,15 @@ export interface ModRepository {
     repo: string
 }
 
+export interface ModVersion {
+    version: string
+    branch: string
+}
+
 export interface PublicModRepositoryConfig {
     repo: string
     prettyName: string
+    versions?: ModVersion[]
 }
 
 export interface PublicModConfig {
@@ -28,6 +34,7 @@ export interface ModDefinition {
     oldBuildsUrl?: string | null
     thumbnailImage?: string
     bannerImage?: string
+    versions?: ModVersion[]
 }
 
 export interface ThemeInput {

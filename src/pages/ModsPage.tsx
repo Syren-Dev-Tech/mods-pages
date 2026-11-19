@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ORGANIZATION_NAME } from '../config/site'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { getMods } from '../data/mods'
 import { getModVisuals } from '../services/modAssets'
 import type { ModDefinition, ModVisuals } from '../types/mods'
@@ -8,6 +9,7 @@ import type { ModDefinition, ModVisuals } from '../types/mods'
 type VisualMap = Record<string, ModVisuals | null>
 
 export default function ModsPage() {
+    usePageTitle('Minecraft Mods')
     const [mods, setMods] = useState<ModDefinition[]>([])
     const [configError, setConfigError] = useState('')
     const [visualsBySlug, setVisualsBySlug] = useState<VisualMap>({})
@@ -70,11 +72,13 @@ export default function ModsPage() {
                 {mods.map((mod) => (
                     <div className="col-12 col-sm-6 col-lg-4" key={mod.slug}>
                         <article className="card h-100 mods-tile">
-                            <img
-                                src={visualsBySlug[mod.slug]?.thumbnailImage || mod.thumbnailImage}
-                                alt={`${mod.name} thumbnail`}
-                                className="mods-thumb"
-                            />
+                            <div className="mods-thumb-wrapper">
+                                <img
+                                    src={visualsBySlug[mod.slug]?.thumbnailImage || mod.thumbnailImage || '/favicon.svg'}
+                                    alt={`${mod.name} thumbnail`}
+                                    className="mods-thumb"
+                                />
+                            </div>
                             <div className="card-body d-flex flex-column">
                                 <h2 className="h4 card-title">{mod.name}</h2>
                                 <p className="card-text text-body-secondary flex-grow-1">{mod.description}</p>

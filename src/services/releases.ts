@@ -69,6 +69,24 @@ async function fetchFromGitHubApi(owner: string, repo: string): Promise<LatestRe
     return normalizeReleasePayload(payload)
 }
 
+async function fetchMultipleReleasesFromGitHubApi(owner: string, repo: string, perPage = 10): Promise<LatestRelease[]> {
+    const response = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/releases?per_page=${perPage}`,
+        {
+            headers: {
+                Accept: 'application/vnd.github+json',
+            },
+        }
+    )
+
+    if (!response.ok) {
+        throw new Error(`GitHub releases request failed (${response.status})`)
+    }
+
+    const payloads = (await response.json()) as ReleasePayload[]
+    return payloads.map((payload) => normalizeReleasePayload(payload)).filter((r) => r !== null) as LatestRelease[]
+}
+
 export async function fetchLatestRelease(mod: ModDefinition): Promise<LatestRelease | null> {
     if (!mod) {
         throw new Error('A mod configuration is required to fetch releases.')
@@ -77,4 +95,14 @@ export async function fetchLatestRelease(mod: ModDefinition): Promise<LatestRele
     const owner = getRepositoryOwner(mod)
     const { repo } = mod.repository
     return fetchFromGitHubApi(owner, repo)
+}
+
+export async function fetchReleases(mod: ModDefinition, limit = 10): Promise<LatestRelease[]> {
+    if (!mod) {
+        throw new Error('A mod configuration is required to fetch releases.')
+    }
+
+    const owner = getRepositoryOwner(mod)
+    const { repo } = mod.repository
+    return fetchMultipleReleasesFromGitHubApi(owner, repo, limit)
 }

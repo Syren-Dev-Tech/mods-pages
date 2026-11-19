@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getLibraryBySlug } from '../data/libraries'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { fetchLibraryReadme } from '../services/libraryContent'
 import { getGitHubRepoUrl, getRepositoryOwner } from '../config/site'
 import { parseMarkdown } from '../utils/markdown'
@@ -16,6 +17,10 @@ export default function LibraryDetailsPage() {
     const [loading, setLoading] = useState(true)
     const [readmeLoading, setReadmeLoading] = useState(false)
     const [error, setError] = useState('')
+
+    // Set page title based on library loading state
+    const pageTitle = loading ? 'Loading Library...' : library ? library.name : 'Library Not Found'
+    usePageTitle(pageTitle)
 
     useEffect(() => {
         let cancelled = false

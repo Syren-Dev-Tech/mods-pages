@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getLibraryBySlug } from '../data/libraries'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { fetchLibraryFile } from '../services/libraryContent'
 import { getGitHubRepoUrl, getRepositoryOwner } from '../config/site'
 import { parseMarkdown } from '../utils/markdown'
@@ -13,6 +14,10 @@ export default function LibraryFilePage() {
     const [content, setContent] = useState('')
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+
+    // Set page title based on file/library loading state
+    const pageTitle = loading ? 'Loading...' : filePath ? `${filePath} - ${library?.name || 'Library'}` : 'File Not Found'
+    usePageTitle(pageTitle)
 
     useEffect(() => {
         let cancelled = false

@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getGitHubLatestReleaseUrl, getRepositoryOwner } from '../config/site'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { getModBySlug } from '../data/mods'
 import { getModVisuals } from '../services/modAssets'
-import { fetchLatestRelease } from '../services/releases'
+import { fetchReleases } from '../services/releases'
+import { fetchModReadme } from '../services/modContent'
+import { parseMarkdown } from '../utils/markdown'
 import type { LatestRelease, ModDefinition, ModVisuals } from '../types/mods'
 
 interface ReleaseState {
     slug: string | null
-    release: LatestRelease | null
+    releases: LatestRelease[]
+    selectedReleaseIndex: number
     errorMessage: string
 }
 
@@ -48,14 +52,27 @@ export default function ModDownloadsPage() {
     const [isModLoading, setIsModLoading] = useState(true)
     const [releaseState, setReleaseState] = useState<ReleaseState>({
         slug: null,
-        release: null,
+        releases: [],
+        selectedReleaseIndex: 0,
         errorMessage: '',
     })
     const [visualsState, setVisualsState] = useState<VisualState>({
         slug: null,
         visuals: null,
     })
+    const [readme, setReadme] = useState('')
+    const [readmeLoading, setReadmeLoading] = useState(false)
+    const [selectedVersion, setSelectedVersion] = useState<string | undefined>()
     const visuals = visualsState.slug === mod?.slug ? visualsState.visuals : null
+
+    // Set page title based on mod loading state
+    let pageTitle = 'Mod Not Found'
+    if (isModLoading) {
+        pageTitle = 'Loading Mod...'
+    } else if (mod) {
+        pageTitle = `${mod.name} Downloads`
+    }
+    usePageTitle(pageTitle)
 
     useEffect(() => {
         let cancelled = false
@@ -68,6 +85,12 @@ export default function ModDownloadsPage() {
 
                 if (!cancelled) {
                     setMod(loadedMod ?? null)
+                    // Initialize selectedVersion with first version if available
+                    if (loadedMod?.versions && loadedMod.versions.length > 0) {
+                        setSelectedVersion(loadedMod.versions[0].branch)
+                    } else {
+                        setSelectedVersion(undefined)
+                    }
                 }
             } finally {
                 if (!cancelled) {
@@ -76,7 +99,7 @@ export default function ModDownloadsPage() {
             }
         }
 
-        loadMod()
+        loadMod().catch(console.error)
 
         return () => {
             cancelled = true
@@ -103,7 +126,7 @@ export default function ModDownloadsPage() {
             }
         }
 
-        loadVisuals()
+        loadVisuals().catch(console.error)
 
         return () => {
             cancelled = true
@@ -141,17 +164,54 @@ export default function ModDownloadsPage() {
         }
 
         const currentMod = mod
+        let cancelled = false
+
+        async function loadReadme() {
+            try {
+                setReadmeLoading(true)
+                const readmeContent = await fetchModReadme(currentMod, selectedVersion)
+
+                if (!cancelled) {
+                    const parsed = readmeContent ? parseMarkdown(readmeContent) : ''
+                    setReadme(parsed)
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    console.error('Failed to load README:', err)
+                    setReadme('')
+                }
+            } finally {
+                if (!cancelled) {
+                    setReadmeLoading(false)
+                }
+            }
+        }
+
+        loadReadme().catch(console.error)
+
+        return () => {
+            cancelled = true
+        }
+    }, [mod, selectedVersion])
+
+    useEffect(() => {
+        if (!mod) {
+            return
+        }
+
+        const currentMod = mod
 
         let cancelled = false
 
         async function loadRelease() {
             try {
-                const latest = await fetchLatestRelease(currentMod)
+                const releases = await fetchReleases(currentMod, 10)
 
                 if (!cancelled) {
                     setReleaseState({
                         slug: currentMod.slug,
-                        release: latest,
+                        releases: releases,
+                        selectedReleaseIndex: 0,
                         errorMessage: '',
                     })
                 }
@@ -159,15 +219,16 @@ export default function ModDownloadsPage() {
                 if (!cancelled) {
                     setReleaseState({
                         slug: currentMod.slug,
-                        release: null,
+                        releases: [],
+                        selectedReleaseIndex: 0,
                         errorMessage:
-                            error instanceof Error ? error.message : 'Failed to load latest release.',
+                            error instanceof Error ? error.message : 'Failed to load releases.',
                     })
                 }
             }
         }
 
-        loadRelease()
+        loadRelease().catch(console.error)
 
         return () => {
             cancelled = true
@@ -176,24 +237,17 @@ export default function ModDownloadsPage() {
 
     const isCurrentSlugLoaded = releaseState.slug === mod?.slug
     const isLoading = Boolean(mod) && !isCurrentSlugLoaded
-    const release = isCurrentSlugLoaded ? releaseState.release : null
+    const release = isCurrentSlugLoaded && releaseState.releases.length > 0
+        ? releaseState.releases[releaseState.selectedReleaseIndex]
+        : null
     const errorMessage = isCurrentSlugLoaded ? releaseState.errorMessage : ''
-
-    useEffect(() => {
-        if (isModLoading) {
-            document.title = 'Loading Mod...'
-            return
-        }
-
-        document.title = mod ? `${mod.name} Downloads` : 'Mod Not Found'
-    }, [isModLoading, mod])
 
     if (isModLoading) {
         return (
             <section className="container">
                 <div className="d-flex align-items-center gap-2 text-body-secondary">
-                    <div className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
-                    Loading mod configuration...
+                    <output className="spinner-border spinner-border-sm" aria-hidden="true" />
+                    <span>Loading mod configuration...</span>
                 </div>
             </section>
         )
@@ -216,28 +270,70 @@ export default function ModDownloadsPage() {
     return (
         <section className="container">
             <Link className="btn btn-link ps-0 mb-2" to="/">
-                <i className="bi bi-arrow-left me-2" aria-hidden="true"></i>
-                Back to all mods
+                <i className="bi bi-arrow-left me-2" aria-hidden="true" />
+                <span>Back to all mods</span>
             </Link>
 
             <div className="mod-banner mb-4">
-                <img src={visuals?.bannerImage || mod.bannerImage} alt={`${mod.name} banner`} />
+                <img src={visuals?.bannerImage || mod.bannerImage || '/favicon.svg'} alt={`${mod.name} banner`} />
                 <div className="mod-banner-caption">
                     <h1 className="h2 mb-1 fw-bold">{mod.name}</h1>
                     <div className="small">Official download builds</div>
                 </div>
             </div>
 
+            {mod.versions && mod.versions.length > 0 && (
+                <div className="mb-4">
+                    <label htmlFor="versionSelect" className="form-label">
+                        Minecraft Version:
+                    </label>
+                    <select
+                        id="versionSelect"
+                        className="form-select"
+                        value={selectedVersion || ''}
+                        onChange={(e) => setSelectedVersion(e.target.value || undefined)}
+                    >
+                        {mod.versions.map((v) => (
+                            <option key={v.branch} value={v.branch}>
+                                {v.version}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
             <article className="latest-release-card p-4">
-                <h2 className="h4 d-flex align-items-center gap-2 mb-3">
-                    <i className="bi bi-stars" aria-hidden="true"></i>
-                    Latest Release
-                </h2>
+                <div className="d-flex justify-content-between align-items-center gap-3 mb-3 flex-wrap">
+                    <h2 className="h4 d-flex align-items-center gap-2 mb-0">
+                        <i className="bi bi-stars" aria-hidden="true" />
+                        <span>Available Releases</span>
+                    </h2>
+                    {!isLoading && releaseState.releases.length > 1 && (
+                        <div className="flex-shrink-0">
+                            <select
+                                className="form-select form-select-sm"
+                                value={releaseState.selectedReleaseIndex}
+                                onChange={(e) =>
+                                    setReleaseState({
+                                        ...releaseState,
+                                        selectedReleaseIndex: Number.parseInt(e.target.value, 10)
+                                    })
+                                }
+                            >
+                                {releaseState.releases.map((rel, index) => (
+                                    <option key={rel.assets[0].id} value={index}>
+                                        {rel.name || rel.tag || 'Release ' + (index + 1)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
 
                 {isLoading && (
                     <div className="d-flex align-items-center gap-2 text-body-secondary">
-                        <div className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
-                        Fetching release details...
+                        <output className="spinner-border spinner-border-sm" aria-hidden="true" />
+                        <span>Fetching release details...</span>
                     </div>
                 )}
 
@@ -267,35 +363,40 @@ export default function ModDownloadsPage() {
                         <div className="d-flex flex-wrap gap-2 mb-4">
                             {release.releaseUrl && (
                                 <a href={release.releaseUrl} target="_blank" rel="noreferrer" className="btn btn-primary">
-                                    <i className="bi bi-github me-2" aria-hidden="true"></i>
-                                    View Release Notes
+                                    <i className="bi bi-github me-2" aria-hidden="true" />
+                                    <span>View Release Notes</span>
                                 </a>
                             )}
                         </div>
 
-                        <h3 className="h5">Download Assets</h3>
+                        <h3 className="h5 mb-3">Download Assets</h3>
                         {release.assets.length > 0 ? (
-                            <ul className="list-group list-group-flush mb-0">
+                            <div className="row g-2 mb-0">
                                 {release.assets.map((asset) => (
-                                    <li key={asset.id} className="list-group-item px-0 d-flex flex-column flex-md-row gap-2">
-                                        <div className="flex-grow-1">
-                                            <div className="fw-semibold">{asset.name}</div>
-                                            {formatSize(asset.size) && (
-                                                <div className="small text-body-secondary">{formatSize(asset.size) as string}</div>
-                                            )}
+                                    <div key={asset.id} className="col-12">
+                                        <div className="download-item p-3 rounded-2 d-flex align-items-center justify-content-between gap-3">
+                                            <div className="flex-grow-1 min-width-0">
+                                                <div className="fw-semibold text-truncate">{asset.name}</div>
+                                                {formatSize(asset.size) && (
+                                                    <div className="small text-body-secondary mt-1">
+                                                        <i className="bi bi-file-earmark me-1" aria-hidden="true"></i>
+                                                        {formatSize(asset.size)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <a
+                                                href={asset.downloadUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="btn btn-primary btn-sm flex-shrink-0"
+                                            >
+                                                <i className="bi bi-download me-1" aria-hidden="true" />
+                                                <span>Download</span>
+                                            </a>
                                         </div>
-                                        <a
-                                            href={asset.downloadUrl}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="btn btn-outline-primary align-self-start"
-                                        >
-                                            <i className="bi bi-download me-2" aria-hidden="true"></i>
-                                            Download
-                                        </a>
-                                    </li>
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
                         ) : (
                             <p className="mb-0 text-body-secondary">No downloadable assets are attached to this release yet.</p>
                         )}
@@ -303,10 +404,27 @@ export default function ModDownloadsPage() {
                 )}
             </article>
 
+            {readmeLoading ? (
+                <div className="text-center py-5">
+                    <output className="spinner-border">
+                        <span className="visually-hidden">Loading...</span>
+                    </output>
+                </div>
+            ) : readme && (
+                <article className="markdown-content muted-panel p-4 rounded-3 mt-4">
+                    <div
+                        className="readme-body"
+                        dangerouslySetInnerHTML={{
+                            __html: readme,
+                        }}
+                    />
+                </article>
+            )}
+
             <aside className="muted-panel p-4 mt-4">
                 <h2 className="h5 mb-2">
-                    <i className="bi bi-clock-history me-2" aria-hidden="true"></i>
-                    Looking for an older build?
+                    <i className="bi bi-clock-history me-2" aria-hidden="true" />
+                    <span>Looking for an older build?</span>
                 </h2>
                 <p className="mb-3 text-body-secondary">
                     Older versions are kept on the release history page so players can pin specific builds.

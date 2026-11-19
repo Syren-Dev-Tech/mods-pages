@@ -21,7 +21,19 @@ function normalizeRepositoryConfig(entry: unknown): PublicModRepositoryConfig | 
         return null
     }
 
-    return { repo, prettyName }
+    // Extract versions if provided
+    const versions = Array.isArray(entry.versions)
+        ? entry.versions
+            .map((v: unknown) => {
+                if (!isObject(v)) return null
+                const version = typeof v.version === 'string' ? v.version.trim() : ''
+                const branch = typeof v.branch === 'string' ? v.branch.trim() : ''
+                return version && branch ? { version, branch } : null
+            })
+            .filter((v): v is { version: string; branch: string } => v !== null)
+        : undefined
+
+    return { repo, prettyName, ...(versions && versions.length > 0 && { versions }) }
 }
 
 function toModDefinition(entry: PublicModRepositoryConfig): ModDefinition {
@@ -37,6 +49,7 @@ function toModDefinition(entry: PublicModRepositoryConfig): ModDefinition {
             themeJsonPath: 'theme.json',
         },
         oldBuildsUrl: getGitHubReleasesUrl(entry.repo),
+        ...(entry.versions && { versions: entry.versions }),
     }
 }
 

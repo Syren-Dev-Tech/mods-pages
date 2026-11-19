@@ -70,11 +70,13 @@ export default function HomePage() {
                 {mods.map((mod) => (
                     <div className="col-12 col-sm-6 col-lg-4" key={mod.slug}>
                         <article className="card h-100 mods-tile">
-                            <img
-                                src={visualsBySlug[mod.slug]?.thumbnailImage || mod.thumbnailImage}
-                                alt={`${mod.name} thumbnail`}
-                                className="mods-thumb"
-                            />
+                            <div className="mods-thumb-wrapper">
+                                <img
+                                    src={visualsBySlug[mod.slug]?.thumbnailImage || mod.thumbnailImage || '/favicon.svg'}
+                                    alt={`${mod.name} thumbnail`}
+                                    className="mods-thumb"
+                                />
+                            </div>
                             <div className="card-body d-flex flex-column">
                                 <h2 className="h4 card-title">{mod.name}</h2>
                                 <p className="card-text text-body-secondary flex-grow-1">{mod.description}</p>
