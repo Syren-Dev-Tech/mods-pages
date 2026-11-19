@@ -1,5 +1,5 @@
 /**
- * Transform relative markdown links in HTML to internal library file routes
+ * Transform relative markdown links in HTML to internal file viewer routes
  */
 export function transformLibraryLinks(html: string, librarySlug: string): string {
     if (!html) return html
@@ -20,10 +20,10 @@ export function transformLibraryLinks(html: string, librarySlug: string): string
             return
         }
 
-        // Transform relative markdown links to internal routes
-        // Examples: docs/guide.md → /library/slug/file/docs/guide
-        //           ../other.md → /library/slug/file/../other
-        //           guide.md → /library/slug/file/guide
+        // Transform relative links to internal routes
+        // Examples: docs/guide.md → /library/slug/file/docs/guide.md
+        //           ../other.md → /library/slug/file/../other.md
+        //           guide.md → /library/slug/file/guide.md
         const transformedHref = `/library/${librarySlug}/file/${href}`
         link.setAttribute('href', transformedHref)
     })

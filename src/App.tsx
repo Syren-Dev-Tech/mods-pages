@@ -4,6 +4,7 @@ import RedirectHandler from './components/RedirectHandler'
 import OrganizationHome from './pages/OrganizationHome'
 import ModsPage from './pages/ModsPage'
 import ModDownloadsPage from './pages/ModDownloadsPage'
+import ModFilePage from './pages/ModFilePage'
 import LibrariesPage from './pages/LibrariesPage'
 import LibraryDetailsPage from './pages/LibraryDetailsPage'
 import LibraryFilePage from './pages/LibraryFilePage'
@@ -18,6 +19,7 @@ function App() {
                         <Route index element={<OrganizationHome />} />
                         <Route path="mods" element={<ModsPage />} />
                         <Route path="mods/:slug" element={<ModDownloadsPage />} />
+                        <Route path="mod/:slug/file/*" element={<ModFilePage />} />
                         <Route path="libraries" element={<LibrariesPage />} />
                         <Route path="libraries/:slug" element={<LibraryDetailsPage />} />
                         <Route path="library/:slug/file/*" element={<LibraryFilePage />} />

@@ -78,18 +78,15 @@ export async function fetchLibraryFile(
         throw new Error('A library configuration is required to fetch a file.')
     }
 
-    // Normalize the file path
+    // Normalize the file path - remove leading slashes
     let normalizedPath = filePath.startsWith('/') ? filePath.slice(1) : filePath
-    if (!normalizedPath.endsWith('.md')) {
-        normalizedPath += '.md'
-    }
 
     const owner = getRepositoryOwner(library as any)
     const { repo } = library.repository
+    const branchToUse = branch || 'main'
 
     try {
-        // Try raw.githubusercontent.com with specific branch or default
-        const branchToUse = branch || 'main'
+        // Try the path as-is first
         const rawResponse = await fetch(
             `https://raw.githubusercontent.com/${owner}/${repo}/${branchToUse}/${normalizedPath}`,
         )
@@ -98,20 +95,40 @@ export async function fetchLibraryFile(
             return await rawResponse.text()
         }
 
-        if (rawResponse.status !== 404) {
-            throw new Error(`GitHub raw content request failed (${rawResponse.status})`)
+        // If file has no extension and wasn't found, try adding .md
+        if (!normalizedPath.includes('.') && rawResponse.status === 404) {
+            const mdResponse = await fetch(
+                `https://raw.githubusercontent.com/${owner}/${repo}/${branchToUse}/${normalizedPath}.md`,
+            )
+
+            if (mdResponse.ok) {
+                return await mdResponse.text()
+            }
         }
 
         // Try alternate branch names if main doesn't work
-        for (const altBranch of ['master', 'default']) {
-            if (altBranch === branchToUse) continue
+        if (rawResponse.status === 404) {
+            for (const altBranch of ['master', 'default']) {
+                if (altBranch === branchToUse) continue
 
-            const altResponse = await fetch(
-                `https://raw.githubusercontent.com/${owner}/${repo}/${altBranch}/${normalizedPath}`,
-            )
+                const altResponse = await fetch(
+                    `https://raw.githubusercontent.com/${owner}/${repo}/${altBranch}/${normalizedPath}`,
+                )
 
-            if (altResponse.ok) {
-                return await altResponse.text()
+                if (altResponse.ok) {
+                    return await altResponse.text()
+                }
+
+                // Also try with .md if no extension
+                if (!normalizedPath.includes('.')) {
+                    const altMdResponse = await fetch(
+                        `https://raw.githubusercontent.com/${owner}/${repo}/${altBranch}/${normalizedPath}.md`,
+                    )
+
+                    if (altMdResponse.ok) {
+                        return await altMdResponse.text()
+                    }
+                }
             }
         }
 

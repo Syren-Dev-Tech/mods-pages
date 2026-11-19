@@ -7,6 +7,7 @@ import { getModVisuals } from '../services/modAssets'
 import { fetchReleases } from '../services/releases'
 import { fetchModReadme } from '../services/modContent'
 import { parseMarkdown } from '../utils/markdown'
+import { transformModLinks } from '../utils/modLinks'
 import type { LatestRelease, ModDefinition, ModVisuals } from '../types/mods'
 
 interface ReleaseState {
@@ -172,7 +173,11 @@ export default function ModDownloadsPage() {
                 const readmeContent = await fetchModReadme(currentMod, selectedVersion)
 
                 if (!cancelled) {
-                    const parsed = readmeContent ? parseMarkdown(readmeContent) : ''
+                    let parsed = readmeContent ? parseMarkdown(readmeContent) : ''
+                    // Transform relative markdown links to internal routes
+                    if (parsed && currentMod.slug) {
+                        parsed = transformModLinks(parsed, currentMod.slug)
+                    }
                     setReadme(parsed)
                 }
             } catch (err) {
