@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Page Redirect</title>
+    <script type="text/javascript">
+        // SPA Redirect for GitHub Pages
+        // This is a workaround for client-side routing in single-page applications
+        // When GitHub Pages returns a 404 for a path that doesn't exist, it serves this file
+        // We then redirect to the index.html with the original path as a query parameter
+
+        const path = window.location.pathname;
+        const params = new URLSearchParams();
+
+        // Store the path that was requested (remove any .html extension and leading slash)
+        const pathToStore = path.replace(/\/$/, '').replace(/\/[^/]*\.html$/, '') || '/';
+
+        // Redirect if:
+        // 1. Path doesn't end with a file extension, OR
+        // 2. Path contains '/file/' (file viewer routes like /library/slug/file/...)
+        // This allows SPA routing and file viewer routes, but not static files
+        const isFileViewerRoute = path.includes('/file/');
+        const doesNotEndWithExtension = !path.match(/\.[a-z0-9]+$/i);
+        
+        if (isFileViewerRoute || doesNotEndWithExtension) {
+            // Redirect to index with the path stored
+            window.location.replace('/index.html?redirect=' + encodeURIComponent(pathToStore));
+        }
+    </script>
+</head>
+
+<body>
+</body>
+
+</html>
