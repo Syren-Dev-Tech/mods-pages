@@ -17,9 +17,14 @@
         // Store the path that was requested (remove any .html extension and leading slash)
         const pathToStore = path.replace(/\/$/, '').replace(/\/[^/]*\.html$/, '') || '/';
 
-        // Only redirect if the path doesn't end with a file extension
-        // This allows other static files to work normally
-        if (!path.match(/\.[a-z0-9]+$/i)) {
+        // Redirect if:
+        // 1. Path doesn't end with a file extension, OR
+        // 2. Path contains '/file/' (file viewer routes like /library/slug/file/...)
+        // This allows SPA routing and file viewer routes, but not static files
+        const isFileViewerRoute = path.includes('/file/');
+        const doesNotEndWithExtension = !path.match(/\.[a-z0-9]+$/i);
+        
+        if (isFileViewerRoute || doesNotEndWithExtension) {
             // Redirect to index with the path stored
             window.location.replace('/index.html?redirect=' + encodeURIComponent(pathToStore));
         }
